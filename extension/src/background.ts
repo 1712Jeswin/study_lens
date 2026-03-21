@@ -1,11 +1,15 @@
-// background.ts — Chrome event listeners, session timing, calls to other modules
-import { ActiveSession } from './types/index.js'
+import { initializeStorage } from './storage.js'
 
-// Placeholder code to ensure the import chain works
-console.log('[StudyLens] Background script starting with session format:', {} as ActiveSession)
-
-// chrome.runtime.onInstalled fires when the extension is first installed, updated, or Chrome is updated.
-// We use this to initialize our database defaults and setup background alarms.
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
   console.log('[StudyLens] Extension installed')
+  
+  // chrome.runtime.onInstalled is the best place to initialize our storage schema
+  // to ensure all expected keys exist before the extension starts tracking.
+  try {
+    await initializeStorage()
+  } catch (error) {
+    console.error('[StudyLens background] Initialization failed:', error)
+  }
 })
+
+
