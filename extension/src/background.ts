@@ -1,5 +1,5 @@
 // background.ts — Chrome event listeners, session timing, calls to other modules
-import { ActiveSession } from './types/index'
+import { ActiveSession } from './types/index.js'
 
 // Placeholder code to ensure the import chain works
 console.log('[StudyLens] Background script starting with session format:', {} as ActiveSession)
