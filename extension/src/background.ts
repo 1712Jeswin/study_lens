@@ -91,23 +91,28 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
  */
 async function handleTabChange(url: string, tabId: number): Promise<void> {
   try {
+    const domain = extractDomain(url)
     if (activeSession !== null) {
+      // Prevent rapid SPA navigations or duplicate onUpdated events from discarding time
+      // If we are already tracking this exact tab and domain, continue the current session.
+      if (activeSession.tabId === tabId && activeSession.domain === domain) {
+        return
+      }
       await finaliseSession(activeSession)
     }
-    if (!isTrackableUrl(url)) {
+    
+    if (!isTrackableUrl(url) || !domain) {
       activeSession = null
       return
     }
-    const domain = extractDomain(url)
-    if (domain) {
-      activeSession = {
-        domain,
-        category: classifySite(url),
-        startTime: Date.now(),
-        tabId
-      }
-      console.log(`[StudyLens] Tracking: ${activeSession.domain} (${activeSession.category})`)
+    
+    activeSession = {
+      domain,
+      category: classifySite(url),
+      startTime: Date.now(),
+      tabId
     }
+    console.log(`[StudyLens] Tracking: ${activeSession.domain} (${activeSession.category})`)
   } catch (error) {
     console.error('[StudyLens background]', error)
   }
