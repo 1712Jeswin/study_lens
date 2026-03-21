@@ -11,5 +11,3 @@ chrome.runtime.onInstalled.addListener(async () => {
     console.error('[StudyLens background] Initialization failed:', error)
   }
 })
-
-
