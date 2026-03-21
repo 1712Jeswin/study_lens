@@ -1,0 +1,10 @@
+instructions/
+track.txt
+track
+node_modules/
+dist/
+*.js
+!extension/src/
+!extension/popup/
+.DS_Store
+.env
