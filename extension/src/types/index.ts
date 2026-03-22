@@ -3,6 +3,20 @@
 // The five possible classifications for any website
 export type SiteCategory = 'ai' | 'coding' | 'study' | 'distraction' | 'uncategorized'
 
+// Activity sub-type derived from URL path patterns — no page content reading
+export type ActivityType =
+  | 'practice'      // active problem solving: leetcode.com/problems/*, gfg.org/practice/*
+  | 'contest'       // competitive: leetcode.com/contest/*, codeforces.com/contest/*
+  | 'reading'       // passive: gfg.org/[topic]/, leetcode.com/discuss/*, medium.com/*
+  | 'video'         // video content: youtube.com/watch*, coursera.org/*/lecture/*
+  | 'structured'    // guided path: leetcode.com/explore/*, theodinproject.com/paths/*
+  | 'review'        // reviewing past work: leetcode.com/submissions/*, github.com/*/commits/*
+  | 'project'       // writing/reading code: github.com/*/blob/*, replit.com/*
+  | 'conversation'  // active AI session: chatgpt.com/c/*, claude.ai/chat/*
+  | 'browsing'      // AI homepage/idle: chatgpt.com/ with no conversation path
+  | 'distraction'   // any distraction category
+  | 'uncategorized'
+
 // One day's accumulated time broken down by category (all values in seconds)
 export interface DailyRecord {
   date: string // ISO date string "YYYY-MM-DD" e.g. "2026-03-21"
@@ -11,6 +25,44 @@ export interface DailyRecord {
   study: number // total seconds spent on learning/study sites
   distraction: number // total seconds spent on distraction sites
   uncategorized: number // total seconds on unrecognised sites
+  // New optional fields added in Phase 7B
+  sessionLog?: SessionEntry[]   // ordered list of today's sessions, newest appended
+  topicTags?: TopicTag[]        // aggregated topic data across today's sessions
+  insight?: DailyInsight        // computed at popup open time, not stored — generated fresh
+  practiceSeconds?: number      // subset of coding: active problem solving time
+  contestSeconds?: number       // subset of coding: contest time
+  readingSeconds?: number       // subset of coding+study: passive reading time
+  videoSeconds?: number         // subset of study: video watching time
+  aiConversationSeconds?: number // subset of ai: active conversation (not idle)
+}
+
+// One recorded tab visit stored in session order — used for pattern analysis
+export interface SessionEntry {
+  domain: string
+  category: SiteCategory
+  activityType: ActivityType
+  durationSeconds: number
+  topicTag: string | null  // e.g. "dynamic-programming", "binary-search", null if not matched
+  startTime: number        // Date.now() — used to preserve chronological order
+}
+
+// A topic extracted from URL slug patterns
+export interface TopicTag {
+  name: string          // "dynamic-programming", "binary-search", "trees", "graphs"
+  totalSeconds: number  // total time on URLs matching this topic today
+  practiceSeconds: number // subset of totalSeconds where activityType === 'practice'
+}
+
+// The computed daily insight — one sentence + optional warning + optional suggestion
+export interface DailyInsight {
+  headline: string          // "You solved 3 problems without AI help today"
+  warning: string | null    // "You switched to AI 6 times while coding — possible dependency pattern"
+  suggestion: string | null // "Try solving one problem completely before opening ChatGPT"
+  aiSwitchCount: number     // times the user switched from coding/study → AI mid-session
+  deepWorkBlocks: number    // sessions ≥ 25 continuous minutes on coding or study
+  activePracticePercent: number // (practice seconds / total coding seconds) × 100
+  longestBlockMinutes: number   // longest single uninterrupted coding/study session in minutes
+  independentSolves: number     // coding sessions NOT immediately preceded by an AI session
 }
 
 // Created when a user spends 30+ minutes on an AI site — awaits their yes/no answer
@@ -52,4 +104,5 @@ export interface ActiveSession {
   category: SiteCategory
   startTime: number // Date.now() when this session started
   tabId: number // Chrome's tab identifier
+  originalUrl: string // full URL needed for activity sub-classification in Phase 7B
 }

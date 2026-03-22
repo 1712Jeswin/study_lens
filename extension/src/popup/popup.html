@@ -1,13 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StudyLens Popup</title>
-  <link rel="stylesheet" href="popup.css">
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css" />
+  <title>StudyLens</title>
 </head>
 <body>
-  <h1 id="title">StudyLens</h1>
-  <script src="popup.js" type="module"></script>
+
+  <!-- Loading state -->
+  <div id="loading">
+    <div class="loading-dot"></div>
+    <div class="loading-dot"></div>
+    <div class="loading-dot"></div>
+  </div>
+
+  <!-- Reflection prompt card — hidden until pendingReflection exists -->
+  <section id="reflection-prompt" hidden>
+    <p id="reflection-message"></p>
+    <div class="reflection-buttons">
+      <button id="btn-yes" class="btn-reflection btn-yes">Yes, AI solved it</button>
+      <button id="btn-no" class="btn-reflection btn-no">No, I used it as reference</button>
+    </div>
+  </section>
+
+  <!-- Header: score ring + date -->
+  <header id="score-header" hidden>
+    <div id="score-ring-container">
+      <svg id="score-ring" viewBox="0 0 80 80" width="80" height="80">
+        <circle class="ring-track" cx="40" cy="40" r="32"/>
+        <circle id="ring-fill" class="ring-fill" cx="40" cy="40" r="32"/>
+      </svg>
+      <div id="score-center">
+        <span id="score-value">0</span>
+        <span id="score-percent">%</span>
+      </div>
+    </div>
+    <div id="score-meta">
+      <div id="score-label">healthy</div>
+      <div id="score-date"></div>
+    </div>
+  </header>
+
+  <!-- Insight card: headline + warning + suggestion -->
+  <section id="insight-section" hidden>
+    <p id="insight-headline"></p>
+    <p id="insight-warning" hidden></p>
+    <p id="insight-suggestion" hidden></p>
+  </section>
+
+  <!-- Metric cards row: three key numbers -->
+  <section id="metrics-section" hidden>
+    <div class="metric-card">
+      <div class="metric-value" id="metric-switches">0</div>
+      <div class="metric-label">AI switches</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" id="metric-deepwork">0</div>
+      <div class="metric-label">Deep sessions</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" id="metric-practice">0%</div>
+      <div class="metric-label">Active practice</div>
+    </div>
+  </section>
+
+  <!-- Time breakdown table -->
+  <section id="breakdown-section" hidden>
+    <table id="breakdown-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Time</th>
+          <th>Type</th>
+          <th class="col-bar"></th>
+        </tr>
+      </thead>
+      <tbody id="breakdown-body">
+        <!-- Rows injected by popup.ts -->
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Topic tags row -->
+  <section id="topics-section" hidden>
+    <div class="section-label">Topics today</div>
+    <div id="topics-container">
+      <!-- Tag pills injected by popup.ts -->
+    </div>
+  </section>
+
+  <!-- Streak + footer -->
+  <footer id="footer-section" hidden>
+    <div id="streak-block">
+      <span id="streak-count">0</span>
+      <span id="streak-label"></span>
+    </div>
+    <span id="footer-version"></span>
+  </footer>
+
 </body>
+<script src="../../dist/popup/popup.js" type="module"></script>
 </html>

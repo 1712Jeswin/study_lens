@@ -220,3 +220,106 @@ export async function clearAllData() {
         console.error('[StudyLens storage] Error clearing storage data:', error);
     }
 }
+/**
+ * Appends a session entry to today's session log.
+ * Caps the session log at 200 entries (drops oldest on overflow).
+ *
+ * @param entry - The SessionEntry to append
+ * @returns Promise that resolves when the write is complete
+ */
+export async function appendSessionEntry(entry) {
+    try {
+        const data = await getStorageData();
+        const today = getTodayISO();
+        const records = data.records;
+        const record = records[today] ?? DEFAULT_DAILY_RECORD(today);
+        const sessionLog = record.sessionLog ?? [];
+        sessionLog.push(entry);
+        // Cap at 200 entries — drop oldest if exceeded
+        while (sessionLog.length > 200) {
+            sessionLog.shift();
+        }
+        record.sessionLog = sessionLog;
+        records[today] = record;
+        await chrome.storage.local.set({ records });
+    }
+    catch (error) {
+        console.error('[StudyLens storage] Error appending session entry:', error);
+    }
+}
+/**
+ * Updates an activity sub-time field on today's record.
+ * Initialises the field to 0 if it is undefined.
+ *
+ * @param field - The DailyRecord field key to update (e.g. 'practiceSeconds')
+ * @param secondsToAdd - Number of seconds to add
+ * @returns Promise that resolves when the write is complete
+ */
+export async function updateActivitySeconds(field, secondsToAdd) {
+    try {
+        const data = await getStorageData();
+        const today = getTodayISO();
+        const records = data.records;
+        const record = records[today] ?? DEFAULT_DAILY_RECORD(today);
+        const current = record[field] ?? 0;
+        // Use Object.assign to set the field value safely
+        Object.assign(record, { [field]: current + secondsToAdd });
+        records[today] = record;
+        await chrome.storage.local.set({ records });
+    }
+    catch (error) {
+        console.error('[StudyLens storage] Error updating activity seconds:', error);
+    }
+}
+/**
+ * Updates or creates a topic tag entry on today's record.
+ * Finds an existing TopicTag with a matching name, or creates a new one.
+ *
+ * @param name - The standardised topic name
+ * @param seconds - Duration in seconds to add
+ * @param isPractice - Whether this time was active practice
+ * @returns Promise that resolves when the write is complete
+ */
+export async function updateTopicTag(name, seconds, isPractice) {
+    try {
+        const data = await getStorageData();
+        const today = getTodayISO();
+        const records = data.records;
+        const record = records[today] ?? DEFAULT_DAILY_RECORD(today);
+        const topicTags = record.topicTags ?? [];
+        const existing = topicTags.find(t => t.name === name);
+        if (existing) {
+            existing.totalSeconds += seconds;
+            if (isPractice)
+                existing.practiceSeconds += seconds;
+        }
+        else {
+            topicTags.push({
+                name,
+                totalSeconds: seconds,
+                practiceSeconds: isPractice ? seconds : 0,
+            });
+        }
+        record.topicTags = topicTags;
+        records[today] = record;
+        await chrome.storage.local.set({ records });
+    }
+    catch (error) {
+        console.error('[StudyLens storage] Error updating topic tag:', error);
+    }
+}
+/**
+ * Retrieves today's session log.
+ *
+ * @returns An array of SessionEntry objects for today, or empty array if none
+ */
+export async function getSessionLog() {
+    try {
+        const record = await getTodayRecord();
+        return record.sessionLog ?? [];
+    }
+    catch (error) {
+        console.error('[StudyLens storage] Error getting session log:', error);
+        return [];
+    }
+}
