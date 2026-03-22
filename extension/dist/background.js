@@ -1,9 +1,10 @@
 // background.ts — Service worker: listens to Chrome events, tracks active tab time, writes to storage.
 // IMPORTANT: This file runs in a service worker. No window, no document, no localStorage.
 import { classifySite, isTrackableUrl, extractDomain } from './classifier.js';
-import { initializeStorage, updateTodayRecord, getStreak, updateStreak, setPendingReflection, getTodayRecord } from './storage.js';
+import { initializeStorage, updateTodayRecord, getStreak, updateStreak, setPendingReflection, getTodayRecord, appendSessionEntry, updateActivitySeconds, updateTopicTag } from './storage.js';
 import { calculateStreak, streakQualifies } from './streak.js';
 import { shouldTriggerReflection, createReflectionEntry } from './reflection.js';
+import { classifyActivity, extractTopicTag } from './activityClassifier.js';
 // The currently active tab being timed. null when no trackable tab is active.
 let activeSession = null;
 // chrome.runtime.onInstalled fires when the extension is first installed, updated to a new version, or Chrome is updated.
@@ -103,7 +104,8 @@ async function handleTabChange(url, tabId) {
             domain,
             category: classifySite(url),
             startTime: Date.now(),
-            tabId
+            tabId,
+            originalUrl: url, // Full URL needed for activity sub-classification in Phase 7B
         };
         console.log(`[StudyLens] Tracking: ${activeSession.domain} (${activeSession.category})`);
     }
@@ -126,13 +128,41 @@ async function finaliseSession(session) {
             await setPendingReflection(entry);
             chrome.alarms.create('reflectionCheck', { delayInMinutes: 5 });
         }
+        // Phase 7B: Build the session entry for the log
+        const sessionEntry = {
+            domain: session.domain,
+            category: session.category,
+            activityType: classifyActivity(session.originalUrl),
+            durationSeconds,
+            topicTag: extractTopicTag(session.originalUrl),
+            startTime: session.startTime,
+        };
+        // Append to today's session log
+        await appendSessionEntry(sessionEntry);
+        // Update activity sub-time breakdowns
+        if (session.category === 'coding' && sessionEntry.activityType === 'practice') {
+            await updateActivitySeconds('practiceSeconds', durationSeconds);
+        }
+        else if (session.category === 'coding' && sessionEntry.activityType === 'contest') {
+            await updateActivitySeconds('contestSeconds', durationSeconds);
+        }
+        else if (sessionEntry.activityType === 'video') {
+            await updateActivitySeconds('videoSeconds', durationSeconds);
+        }
+        else if (sessionEntry.activityType === 'conversation') {
+            await updateActivitySeconds('aiConversationSeconds', durationSeconds);
+        }
+        // Update topic tags
+        if (sessionEntry.topicTag) {
+            await updateTopicTag(sessionEntry.topicTag, durationSeconds, sessionEntry.activityType === 'practice');
+        }
         const record = await getTodayRecord();
         if (streakQualifies(record)) {
             const streak = await getStreak();
             const newStreak = calculateStreak(streak, true);
             await updateStreak(newStreak);
         }
-        console.log(`[StudyLens] Finalised: ${session.domain} — ${durationSeconds}s (${session.category})`);
+        console.log(`[StudyLens] Finalised: ${session.domain} — ${durationSeconds}s (${session.category}) [${sessionEntry.activityType}]`);
     }
     catch (error) {
         console.error('[StudyLens background]', error);
