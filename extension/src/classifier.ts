@@ -1,4 +1,3 @@
-// classifier.ts — Maps website domains to study categories. Pure functions, no side effects, no Chrome APIs.
 
 import type { SiteCategory } from './types/index.js'
 

@@ -1,4 +1,3 @@
-// score.ts — Pure function: numbers in → DependencyScore out
 
 import type { DailyRecord, DependencyScore } from './types/index.js'
 

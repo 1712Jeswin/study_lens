@@ -1,14 +1,6 @@
-// activityClassifier.ts — Derives activity type and topic tag from a URL path.
-// Pure functions only. No Chrome APIs. No storage access. No side effects.
-// Uses URL path slug patterns — never reads page content.
-
 import type { ActivityType, SessionEntry, DailyInsight, SiteCategory } from './types/index.js'
 import { classifySite } from './classifier.js'
 
-/**
- * Known topic slugs mapped to their standardised tag names.
- * Used by extractTopicTag to match URL path segments against DSA topics.
- */
 const KNOWN_TOPICS: Record<string, string> = {
   'dynamic-programming': 'dynamic-programming',
   'dp': 'dynamic-programming',
